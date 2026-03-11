@@ -164,10 +164,23 @@ st.metric(
 if "Data" in df_filtrado.columns:
     df_filtrado["Data"] = pd.to_datetime(df_filtrado["Data"], errors="coerce").dt.strftime("%d/%m/%Y")
 
-# Valor Bruto formato contábil BR
-df_filtrado["Valor Bruto"] = df_filtrado["Valor Bruto"].apply(
-    lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-)
+# função para formatar reais
+def formatar_real(valor):
+    if pd.isna(valor):
+        return ""
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+# colunas monetárias
+colunas_reais = [
+    "Valor Bruto",
+    "Valor Líquido",
+    "IR",
+    "IOF"
+]
+
+for col in colunas_reais:
+    if col in df_filtrado.columns:
+        df_filtrado[col] = df_filtrado[col].apply(formatar_real)
 
 # =========================
 # TABELA
