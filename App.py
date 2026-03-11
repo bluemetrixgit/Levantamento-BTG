@@ -118,9 +118,14 @@ produto = st.sidebar.multiselect(
     sorted(df["Produto"].dropna().unique())
 )
 
-observação = st.sidebar.multiselect(
+# filtro observações
+observacoes = st.sidebar.multiselect(
     "Observações",
     sorted(df["Observações"].dropna().unique())
+)
+
+somente_sem_obs = st.sidebar.checkbox(
+    "Mostrar apenas contas sem observações"
 )
 
 # =========================
