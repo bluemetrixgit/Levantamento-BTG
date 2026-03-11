@@ -152,8 +152,21 @@ if produto:
 valor_total = df_filtrado["Valor Bruto"].sum()
 
 st.metric(
-    "Valor Investido",
+    "Valor Bruto",
     f"R$ {valor_total:,.2f}"
+)
+
+# =========================
+# FORMATAÇÃO
+# =========================
+
+# Data no formato brasileiro
+if "Data" in df_filtrado.columns:
+    df_filtrado["Data"] = pd.to_datetime(df_filtrado["Data"], errors="coerce").dt.strftime("%d/%m/%Y")
+
+# Valor Bruto formato contábil BR
+df_filtrado["Valor Bruto"] = df_filtrado["Valor Bruto"].apply(
+    lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 )
 
 # =========================
