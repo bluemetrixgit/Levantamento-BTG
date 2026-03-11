@@ -7,7 +7,7 @@ st.set_page_config(page_title="Posição de Clientes", layout="wide")
 # LOGO
 # =========================
 
-st.image("logo.png", width=200)
+st.image("logo.branca.png", width=200)
 
 st.title("Posição Consolidada de Clientes")
 
