@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from PIL import Image
 
 st.set_page_config(page_title="Posição de Clientes", layout="wide")
 
@@ -7,9 +8,22 @@ st.set_page_config(page_title="Posição de Clientes", layout="wide")
 # LOGO
 # =========================
 
-st.image("logo.branca.png", width=200)
+logo = Image.open("logo.branca.png")
+st.image(logo, width=200)
 
 st.title("Posição Consolidada de Clientes")
+
+# =========================
+# FUNÇÃO PADRONIZAR CONTA
+# =========================
+
+def limpar_conta(coluna):
+    return (
+        coluna.astype(str)
+        .str.replace(".0", "", regex=False)
+        .str.strip()
+        .str.lstrip("0")
+    )
 
 # =========================
 # LEITURA DOS ARQUIVOS
@@ -26,13 +40,21 @@ def carregar_dados():
         header=1
     )
 
+    # limpar nomes das colunas
+    posicao.columns = posicao.columns.str.strip()
+    controle.columns = controle.columns.str.strip()
+
+    # padronizar contas
+    posicao["Conta"] = limpar_conta(posicao["Conta"])
+    controle["Conta"] = limpar_conta(controle["Conta"])
+
     return posicao, controle
 
 
 posicao, controle = carregar_dados()
 
 # =========================
-# SELEÇÃO DE COLUNAS
+# COLUNAS DO CONTROLE
 # =========================
 
 controle = controle[
@@ -44,10 +66,6 @@ controle = controle[
         "Observações"
     ]
 ]
-
-# garantir mesmo tipo
-posicao["Conta"] = posicao["Conta"].astype(str)
-controle["Conta"] = controle["Conta"].astype(str)
 
 # =========================
 # MERGE
@@ -128,7 +146,7 @@ if produto:
     df_filtrado = df_filtrado[df_filtrado["Produto"].isin(produto)]
 
 # =========================
-# MÉTRICAS
+# MÉTRICA DE VALOR
 # =========================
 
 valor_total = df_filtrado["Valor Bruto"].sum()
@@ -141,8 +159,6 @@ st.metric(
 # =========================
 # TABELA
 # =========================
-st.write("Contas na posição:", posicao["Conta"].head())
-st.write("Contas no controle:", controle["Conta"].head())
 
 st.dataframe(
     df_filtrado,
