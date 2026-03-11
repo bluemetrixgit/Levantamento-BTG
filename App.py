@@ -141,6 +141,8 @@ st.metric(
 # =========================
 # TABELA
 # =========================
+st.write("Contas na posição:", posicao["Conta"].head())
+st.write("Contas no controle:", controle["Conta"].head())
 
 st.dataframe(
     df_filtrado,
