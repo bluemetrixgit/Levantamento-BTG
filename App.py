@@ -83,6 +83,11 @@ df = posicao.merge(
 
 st.sidebar.header("Filtros")
 
+conta = st.sidebar.multiselect(
+    "Conta",
+    sorted(df["Conta"].dropna().unique())
+)
+
 carteira = st.sidebar.multiselect(
     "Carteira",
     sorted(df["Carteira"].dropna().unique())
@@ -116,16 +121,6 @@ ativo = st.sidebar.multiselect(
 produto = st.sidebar.multiselect(
     "Produto",
     sorted(df["Produto"].dropna().unique())
-)
-
-# filtro observações
-observacoes = st.sidebar.multiselect(
-    "Observações",
-    sorted(df["Observações"].dropna().unique())
-)
-
-somente_sem_obs = st.sidebar.checkbox(
-    "Mostrar apenas contas sem observações"
 )
 
 # =========================
