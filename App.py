@@ -129,6 +129,9 @@ produto = st.sidebar.multiselect(
 
 df_filtrado = df.copy()
 
+if conta:
+    df_filtrado = df_filtrado[df_filtrado["Conta"].isin(conta)]
+
 if carteira:
     df_filtrado = df_filtrado[df_filtrado["Carteira"].isin(carteira)]
 
