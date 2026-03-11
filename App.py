@@ -118,6 +118,11 @@ produto = st.sidebar.multiselect(
     sorted(df["Produto"].dropna().unique())
 )
 
+observação = st.sidebar.multiselect(
+    "Observações",
+    sorted(df["Observações"].dropna().unique())
+)
+
 # =========================
 # APLICAR FILTROS
 # =========================
