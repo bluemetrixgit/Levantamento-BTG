@@ -60,10 +60,10 @@ posicao, controle = carregar_dados()
 controle = controle[
     [
         "Conta",
-        "Status",
-        "Situação",
         "Carteira",
-        "Observações"
+        "Observações",
+        "Status",
+        "Situação"
     ]
 ]
 
