@@ -18,10 +18,10 @@ st.title("Posição Consolidada de Clientes")
 @st.cache_data
 def carregar_dados():
 
-    posicao = pd.read_excel("Posicao.xlsx")
+    posicao = pd.read_excel("Posição.xlsx")
 
     controle = pd.read_excel(
-        "Controle_Contratos.xlsx",
+        "Controle de Contratos - Atualizado 2026.xlsx",
         sheet_name="BTG",
         header=1
     )
