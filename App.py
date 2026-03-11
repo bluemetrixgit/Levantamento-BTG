@@ -76,6 +76,10 @@ df = posicao.merge(
     how="left"
 )
 
+df["Carteira"] = df["Carteira"].astype(str).str.strip()
+df["Status"] = df["Status"].astype(str).str.strip()
+df["Observações"] = df["Observações"].astype(str).str.strip()
+
 # =========================
 # SIDEBAR FILTROS
 # =========================
