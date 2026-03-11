@@ -80,6 +80,9 @@ df["Carteira"] = df["Carteira"].astype(str).str.strip()
 df["Status"] = df["Status"].astype(str).str.strip()
 df["Observações"] = df["Observações"].astype(str).str.strip()
 
+# remover contas sem carteira encontrada
+df = df[df["Carteira"].str.lower() != "nan"]
+
 # =========================
 # SIDEBAR FILTROS
 # =========================
