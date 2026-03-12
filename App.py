@@ -248,7 +248,7 @@ with aba2:
         "Baixar Excel",
         data=excel,
         file_name="resumo_contas.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         key="download_resumo"
     )
 
@@ -296,7 +296,7 @@ with aba3:
         "Baixar Excel",
         data=excel,
         file_name="mercados.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         key="download_mercados"
     )
 
@@ -369,6 +369,6 @@ with aba4:
         "Baixar Excel",
         data=excel,
         file_name="vencimentos.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         key="download_vencimentos"
     )
