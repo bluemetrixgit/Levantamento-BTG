@@ -193,7 +193,7 @@ with aba1:
         "Baixar Excel",
         data=excel,
         file_name="posicoes_filtradas.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         key="download_posicoes"
     )
 
