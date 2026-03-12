@@ -142,10 +142,12 @@ somente_sem_obs = st.sidebar.checkbox(
 # ABAS
 # =========================
 
-aba1, aba2 = st.tabs(["Posições", "Resumo por Conta"])
+aba1, aba2, aba3 = st.tabs(
+    ["Posições", "Resumo por Conta", "Gráfico por Mercado"]
+)
 
 # =========================
-# ABA 1
+# ABA 1 - POSIÇÕES
 # =========================
 
 with aba1:
@@ -256,7 +258,7 @@ with aba1:
     )
 
 # =========================
-# ABA 2 - RESUMO
+# ABA 2 - RESUMO POR CONTA
 # =========================
 
 with aba2:
@@ -271,7 +273,6 @@ with aba2:
     if status:
         df_resumo = df_resumo[df_resumo["Status"].isin(status)]
 
-    # informações da conta
     info_conta = (
         df_resumo[["Conta", "Carteira", "Status", "Observações"]]
         .drop_duplicates()
@@ -321,24 +322,15 @@ with aba2:
         ]
     ]
 
-    def formatar_real(valor):
-        return (
-            f"R$ {valor:,.2f}"
-            .replace(",", "X")
-            .replace(".", ",")
-            .replace("X", ".")
-        )
-
-    resumo_formatado = resumo.copy()
-
-    for col in ["Valor Bruto Total", "Caixa", "Ações"]:
-        resumo_formatado[col] = resumo_formatado[col].apply(formatar_real)
-
     st.dataframe(
-        resumo_formatado,
+        resumo,
         use_container_width=True,
         height=600
     )
+
+# =========================
+# DOWNLOAD EXCEL RESUMO
+# =========================
 
     def gerar_excel_resumo(df):
 
@@ -352,11 +344,58 @@ with aba2:
         return output
 
 
-    excel_resumo = gerar_excel_resumo(resumo)
+excel_resumo = gerar_excel_resumo(resumo)
 
-    st.download_button(
-        label="Baixar Excel do Resumo",
-        data=excel_resumo,
-        file_name="resumo_por_conta.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+st.download_button(
+    label="Baixar Excel do Resumo",
+    data=excel_resumo,
+    file_name="resumo_por_conta.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
+# =========================
+# ABA 3 - GRÁFICO MERCADO
+# =========================
+
+with aba3:
+
+    st.subheader("Distribuição por Mercado")
+
+    df_grafico = df.copy()
+
+    if carteira:
+        df_grafico = df_grafico[df_grafico["Carteira"].isin(carteira)]
+
+    if status:
+        df_grafico = df_grafico[df_grafico["Status"].isin(status)]
+
+    mercado_resumo = (
+        df_grafico
+        .groupby("Mercado")["Valor Bruto"]
+        .sum()
+        .reset_index()
+        .sort_values("Valor Bruto", ascending=False)
+    )
+
+    total = mercado_resumo["Valor Bruto"].sum()
+
+    mercado_resumo["%"] = (
+        mercado_resumo["Valor Bruto"] / total * 100
+    )
+
+    st.bar_chart(
+        mercado_resumo.set_index("Mercado")["Valor Bruto"]
+    )
+
+    mercado_resumo["Valor Bruto"] = mercado_resumo["Valor Bruto"].apply(
+        lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
+
+    mercado_resumo["%"] = mercado_resumo["%"].apply(
+        lambda x: f"{x:.2f}%"
+    )
+
+    st.dataframe(
+        mercado_resumo,
+        use_container_width=True
     )
