@@ -27,18 +27,28 @@ def limpar_conta(coluna):
     )
 
 # =========================
+# FORMATAÇÃO REAL
+# =========================
+
+def formatar_real(valor):
+    if pd.isna(valor):
+        return ""
+    return (
+        f"R$ {valor:,.2f}"
+        .replace(",", "X")
+        .replace(".", ",")
+        .replace("X", ".")
+    )
+
+# =========================
 # GERAR EXCEL
 # =========================
 
 def gerar_excel(df):
-
     output = BytesIO()
-
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False)
-
     output.seek(0)
-
     return output
 
 # =========================
@@ -83,66 +93,28 @@ df = posicao.merge(
     how="left"
 )
 
-# remover contas sem carteira encontrada
 df = df[df["Carteira"].notna()]
 
 # =========================
-# SIDEBAR
+# SIDEBAR FILTROS
 # =========================
 
 st.sidebar.header("Filtros")
 
-contas = st.sidebar.multiselect(
-    "Conta",
-    sorted(df["Conta"].dropna().unique())
-)
+contas = st.sidebar.multiselect("Conta", sorted(df["Conta"].dropna().unique()))
+carteira = st.sidebar.multiselect("Carteira", sorted(df["Carteira"].dropna().unique()))
+status = st.sidebar.multiselect("Status", sorted(df["Status"].dropna().unique()))
+situacao = st.sidebar.multiselect("Situação", sorted(df["Situação"].dropna().unique()))
+mercado = st.sidebar.multiselect("Mercado", sorted(df["Mercado"].dropna().unique()))
+submercado = st.sidebar.multiselect("Sub Mercado", sorted(df["Sub Mercado"].dropna().unique()))
+ativo = st.sidebar.multiselect("Ativo", sorted(df["Ativo"].dropna().unique()))
+produto = st.sidebar.multiselect("Produto", sorted(df["Produto"].dropna().unique()))
+observacoes = st.sidebar.multiselect("Observações", sorted(df["Observações"].dropna().unique()))
 
-carteira = st.sidebar.multiselect(
-    "Carteira",
-    sorted(df["Carteira"].dropna().unique())
-)
-
-status = st.sidebar.multiselect(
-    "Status",
-    sorted(df["Status"].dropna().unique())
-)
-
-situacao = st.sidebar.multiselect(
-    "Situação",
-    sorted(df["Situação"].dropna().unique())
-)
-
-mercado = st.sidebar.multiselect(
-    "Mercado",
-    sorted(df["Mercado"].dropna().unique())
-)
-
-submercado = st.sidebar.multiselect(
-    "Sub Mercado",
-    sorted(df["Sub Mercado"].dropna().unique())
-)
-
-ativo = st.sidebar.multiselect(
-    "Ativo",
-    sorted(df["Ativo"].dropna().unique())
-)
-
-produto = st.sidebar.multiselect(
-    "Produto",
-    sorted(df["Produto"].dropna().unique())
-)
-
-observacoes = st.sidebar.multiselect(
-    "Observações",
-    sorted(df["Observações"].dropna().unique())
-)
-
-somente_sem_obs = st.sidebar.checkbox(
-    "Mostrar apenas contas sem observações"
-)
+somente_sem_obs = st.sidebar.checkbox("Mostrar apenas contas sem observações")
 
 # =========================
-# FILTROS
+# APLICAR FILTROS
 # =========================
 
 df_filtrado = df.copy()
@@ -185,31 +157,18 @@ if somente_sem_obs:
 # =========================
 
 valor_total = df_filtrado["Valor Bruto"].sum()
-
-valor_total_formatado = (
-    f"R$ {valor_total:,.2f}"
-    .replace(",", "X")
-    .replace(".", ",")
-    .replace("X", ".")
-)
-
-st.metric("Valor Investido", valor_total_formatado)
+st.metric("Valor Investido", formatar_real(valor_total))
 
 # =========================
 # TABS
 # =========================
 
 aba1, aba2, aba3, aba4 = st.tabs(
-    [
-        "Posições",
-        "Resumo por Conta",
-        "Mercados",
-        "Vencimentos"
-    ]
+    ["Posições", "Resumo por Conta", "Mercados", "Vencimentos"]
 )
 
 # =========================
-# ABA 1
+# ABA 1 - POSIÇÕES
 # =========================
 
 with aba1:
@@ -221,16 +180,6 @@ with aba1:
             df_exibir["Data"],
             errors="coerce"
         ).dt.strftime("%d/%m/%Y")
-
-    def formatar_real(valor):
-        if pd.isna(valor):
-            return ""
-        return (
-            f"R$ {valor:,.2f}"
-            .replace(",", "X")
-            .replace(".", ",")
-            .replace("X", ".")
-        )
 
     for col in ["Valor Bruto", "Valor Líquido", "IR", "IOF"]:
         if col in df_exibir.columns:
@@ -248,7 +197,7 @@ with aba1:
     )
 
 # =========================
-# ABA 2
+# ABA 2 - RESUMO POR CONTA
 # =========================
 
 with aba2:
@@ -283,10 +232,14 @@ with aba2:
 
     resumo = resumo.merge(caixa, on="Conta", how="left")
     resumo = resumo.merge(acoes, on="Conta", how="left")
-
     resumo = resumo.fillna(0)
 
-    st.dataframe(resumo, use_container_width=True)
+    resumo_formatado = resumo.copy()
+
+    for col in ["Valor Bruto", "Caixa", "Ações"]:
+        resumo_formatado[col] = resumo_formatado[col].apply(formatar_real)
+
+    st.dataframe(resumo_formatado, use_container_width=True)
 
     excel = gerar_excel(resumo)
 
@@ -298,7 +251,7 @@ with aba2:
     )
 
 # =========================
-# ABA 3
+# ABA 3 - MERCADOS
 # =========================
 
 with aba3:
@@ -328,7 +281,12 @@ with aba3:
         mercado_resumo.set_index("Mercado")["Valor Bruto"]
     )
 
-    st.dataframe(mercado_resumo, use_container_width=True)
+    mercado_formatado = mercado_resumo.copy()
+
+    mercado_formatado["Valor Bruto"] = mercado_formatado["Valor Bruto"].apply(formatar_real)
+    mercado_formatado["%"] = mercado_formatado["%"].apply(lambda x: f"{x:.2f}%")
+
+    st.dataframe(mercado_formatado, use_container_width=True)
 
     excel = gerar_excel(mercado_resumo)
 
@@ -340,7 +298,7 @@ with aba3:
     )
 
 # =========================
-# ABA 4
+# ABA 4 - VENCIMENTOS
 # =========================
 
 with aba4:
@@ -368,6 +326,28 @@ with aba4:
         .sum()
         .reset_index()
         .sort_values("Ano-Mês")
+    )
+
+    total = venc["Valor Bruto"].sum()
+    venc["%"] = venc["Valor Bruto"] / total * 100
+
+    st.bar_chart(
+        venc.set_index("Ano-Mês")["Valor Bruto"]
+    )
+
+    venc_formatado = venc.copy()
+    venc_formatado["Valor Bruto"] = venc_formatado["Valor Bruto"].apply(formatar_real)
+    venc_formatado["%"] = venc_formatado["%"].apply(lambda x: f"{x:.2f}%")
+
+    st.dataframe(venc_formatado, use_container_width=True)
+
+    excel = gerar_excel(venc)
+
+    st.download_button(
+        "Baixar Excel",
+        data=excel,
+        file_name="vencimentos.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
     total = venc["Valor Bruto"].sum()
