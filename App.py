@@ -27,6 +27,21 @@ def limpar_conta(coluna):
     )
 
 # =========================
+# GERAR EXCEL
+# =========================
+
+def gerar_excel(df):
+
+    output = BytesIO()
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False)
+
+    output.seek(0)
+
+    return output
+
+# =========================
 # CARREGAR DADOS
 # =========================
 
@@ -52,10 +67,6 @@ def carregar_dados():
 
 posicao, controle = carregar_dados()
 
-# =========================
-# COLUNAS CONTROLE
-# =========================
-
 controle = controle[
     [
         "Conta",
@@ -66,25 +77,17 @@ controle = controle[
     ]
 ]
 
-# =========================
-# MERGE
-# =========================
-
 df = posicao.merge(
     controle,
     on="Conta",
     how="left"
 )
 
-df["Carteira"] = df["Carteira"].astype(str).str.strip()
-df["Status"] = df["Status"].astype(str).str.strip()
-df["Observações"] = df["Observações"].astype(str).str.strip()
-
 # remover contas sem carteira encontrada
-df = df[df["Carteira"].str.lower() != "nan"]
+df = df[df["Carteira"].notna()]
 
 # =========================
-# SIDEBAR FILTROS
+# SIDEBAR
 # =========================
 
 st.sidebar.header("Filtros")
@@ -139,73 +142,83 @@ somente_sem_obs = st.sidebar.checkbox(
 )
 
 # =========================
-# ABAS
+# FILTROS
 # =========================
 
-aba1, aba2, aba3 = st.tabs(
-    ["Posições", "Resumo por Conta", "Gráfico por Mercado"]
+df_filtrado = df.copy()
+
+if contas:
+    df_filtrado = df_filtrado[df_filtrado["Conta"].isin(contas)]
+
+if carteira:
+    df_filtrado = df_filtrado[df_filtrado["Carteira"].isin(carteira)]
+
+if status:
+    df_filtrado = df_filtrado[df_filtrado["Status"].isin(status)]
+
+if situacao:
+    df_filtrado = df_filtrado[df_filtrado["Situação"].isin(situacao)]
+
+if mercado:
+    df_filtrado = df_filtrado[df_filtrado["Mercado"].isin(mercado)]
+
+if submercado:
+    df_filtrado = df_filtrado[df_filtrado["Sub Mercado"].isin(submercado)]
+
+if ativo:
+    df_filtrado = df_filtrado[df_filtrado["Ativo"].isin(ativo)]
+
+if produto:
+    df_filtrado = df_filtrado[df_filtrado["Produto"].isin(produto)]
+
+if observacoes:
+    df_filtrado = df_filtrado[df_filtrado["Observações"].isin(observacoes)]
+
+if somente_sem_obs:
+    df_filtrado = df_filtrado[
+        (df_filtrado["Observações"].isna()) |
+        (df_filtrado["Observações"].astype(str).str.strip() == "")
+    ]
+
+# =========================
+# MÉTRICA
+# =========================
+
+valor_total = df_filtrado["Valor Bruto"].sum()
+
+valor_total_formatado = (
+    f"R$ {valor_total:,.2f}"
+    .replace(",", "X")
+    .replace(".", ",")
+    .replace("X", ".")
+)
+
+st.metric("Valor Investido", valor_total_formatado)
+
+# =========================
+# TABS
+# =========================
+
+aba1, aba2, aba3, aba4 = st.tabs(
+    [
+        "Posições",
+        "Resumo por Conta",
+        "Mercados",
+        "Vencimentos"
+    ]
 )
 
 # =========================
-# ABA 1 - POSIÇÕES
+# ABA 1
 # =========================
 
 with aba1:
 
-    df_filtrado = df.copy()
+    df_exibir = df_filtrado.copy()
 
-    if contas:
-        df_filtrado = df_filtrado[df_filtrado["Conta"].isin(contas)]
-
-    if carteira:
-        df_filtrado = df_filtrado[df_filtrado["Carteira"].isin(carteira)]
-
-    if status:
-        df_filtrado = df_filtrado[df_filtrado["Status"].isin(status)]
-
-    if situacao:
-        df_filtrado = df_filtrado[df_filtrado["Situação"].isin(situacao)]
-
-    if mercado:
-        df_filtrado = df_filtrado[df_filtrado["Mercado"].isin(mercado)]
-
-    if submercado:
-        df_filtrado = df_filtrado[df_filtrado["Sub Mercado"].isin(submercado)]
-
-    if ativo:
-        df_filtrado = df_filtrado[df_filtrado["Ativo"].isin(ativo)]
-
-    if produto:
-        df_filtrado = df_filtrado[df_filtrado["Produto"].isin(produto)]
-
-    if observacoes:
-        df_filtrado = df_filtrado[df_filtrado["Observações"].isin(observacoes)]
-
-    if somente_sem_obs:
-        df_filtrado = df_filtrado[
-            (df_filtrado["Observações"].isna()) |
-            (df_filtrado["Observações"].astype(str).str.strip() == "")
-        ]
-
-    valor_total = df_filtrado["Valor Bruto"].sum()
-
-    valor_total_formatado = (
-        f"R$ {valor_total:,.2f}"
-        .replace(",", "X")
-        .replace(".", ",")
-        .replace("X", ".")
-    )
-
-    st.metric(
-        "Valor Investido",
-        valor_total_formatado
-    )
-
-    df_download = df_filtrado.copy()
-
-    if "Data" in df_filtrado.columns:
-        df_filtrado["Data"] = pd.to_datetime(
-            df_filtrado["Data"],
+    if "Data" in df_exibir.columns:
+        df_exibir["Data"] = pd.to_datetime(
+            df_exibir["Data"],
             errors="coerce"
         ).dt.strftime("%d/%m/%Y")
 
@@ -219,79 +232,43 @@ with aba1:
             .replace("X", ".")
         )
 
-    colunas_reais = [
-        "Valor Bruto",
-        "Valor Líquido",
-        "IR",
-        "IOF"
-    ]
+    for col in ["Valor Bruto", "Valor Líquido", "IR", "IOF"]:
+        if col in df_exibir.columns:
+            df_exibir[col] = df_exibir[col].apply(formatar_real)
 
-    for col in colunas_reais:
-        if col in df_filtrado.columns:
-            df_filtrado[col] = df_filtrado[col].apply(formatar_real)
+    st.dataframe(df_exibir, use_container_width=True, height=600)
 
-    st.dataframe(
-        df_filtrado,
-        use_container_width=True,
-        height=600
-    )
-
-    def gerar_excel(df):
-
-        output = BytesIO()
-
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Dados")
-
-        output.seek(0)
-
-        return output
-
-
-    excel_file = gerar_excel(df_download)
+    excel = gerar_excel(df_filtrado)
 
     st.download_button(
-        label="Baixar Excel",
-        data=excel_file,
+        "Baixar Excel",
+        data=excel,
         file_name="posicoes_filtradas.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 # =========================
-# ABA 2 - RESUMO POR CONTA
+# ABA 2
 # =========================
 
 with aba2:
 
-    st.subheader("Resumo por Conta")
+    df_resumo = df_filtrado.copy()
 
-    df_resumo = df.copy()
-
-    if carteira:
-        df_resumo = df_resumo[df_resumo["Carteira"].isin(carteira)]
-
-    if status:
-        df_resumo = df_resumo[df_resumo["Status"].isin(status)]
-
-    info_conta = (
-        df_resumo[["Conta", "Carteira", "Status", "Observações"]]
-        .drop_duplicates()
-    )
-
-    total_conta = (
+    resumo = (
         df_resumo
-        .groupby("Conta")["Valor Bruto"]
+        .groupby(["Conta", "Carteira", "Status", "Observações"])["Valor Bruto"]
         .sum()
-        .reset_index(name="Valor Bruto Total")
+        .reset_index()
     )
 
-    produtos_caixa = [
+    caixa_produtos = [
         "BLUEMETRIX RF ATIVO FIRF",
         "BTG Tesouro Selic FIRFRefDI"
     ]
 
     caixa = (
-        df_resumo[df_resumo["Produto"].isin(produtos_caixa)]
+        df_resumo[df_resumo["Produto"].isin(caixa_produtos)]
         .groupby("Conta")["Valor Bruto"]
         .sum()
         .reset_index(name="Caixa")
@@ -304,77 +281,41 @@ with aba2:
         .reset_index(name="Ações")
     )
 
-    resumo = total_conta.merge(caixa, on="Conta", how="left")
+    resumo = resumo.merge(caixa, on="Conta", how="left")
     resumo = resumo.merge(acoes, on="Conta", how="left")
-    resumo = resumo.merge(info_conta, on="Conta", how="left")
 
     resumo = resumo.fillna(0)
 
-    resumo = resumo[
-        [
-            "Conta",
-            "Carteira",
-            "Status",
-            "Observações",
-            "Valor Bruto Total",
-            "Caixa",
-            "Ações"
-        ]
-    ]
+    st.dataframe(resumo, use_container_width=True)
 
-    st.dataframe(
-        resumo,
-        use_container_width=True,
-        height=600
+    excel = gerar_excel(resumo)
+
+    st.download_button(
+        "Baixar Excel",
+        data=excel,
+        file_name="resumo_contas.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 # =========================
-# DOWNLOAD EXCEL RESUMO
-# =========================
-
-    def gerar_excel_resumo(df):
-
-        output = BytesIO()
-
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Resumo")
-
-        output.seek(0)
-
-        return output
-
-
-excel_resumo = gerar_excel_resumo(resumo)
-
-st.download_button(
-    label="Baixar Excel do Resumo",
-    data=excel_resumo,
-    file_name="resumo_por_conta.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
-
-# =========================
-# ABA 3 - GRÁFICO MERCADO
+# ABA 3
 # =========================
 
 with aba3:
 
-    st.subheader("Distribuição por Mercado")
-
-    df_grafico = df.copy()
+    df_graf = df.copy()
 
     if carteira:
-        df_grafico = df_grafico[df_grafico["Carteira"].isin(carteira)]
+        df_graf = df_graf[df_graf["Carteira"].isin(carteira)]
 
     if status:
-        df_grafico = df_grafico[df_grafico["Status"].isin(status)]
+        df_graf = df_graf[df_graf["Status"].isin(status)]
 
     mercado_resumo = (
-        df_grafico
+        df_graf
         .groupby("Mercado")["Valor Bruto"]
         .sum()
         .reset_index()
-        .sort_values("Valor Bruto", ascending=False)
     )
 
     total = mercado_resumo["Valor Bruto"].sum()
@@ -387,15 +328,63 @@ with aba3:
         mercado_resumo.set_index("Mercado")["Valor Bruto"]
     )
 
-    mercado_resumo["Valor Bruto"] = mercado_resumo["Valor Bruto"].apply(
-        lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    st.dataframe(mercado_resumo, use_container_width=True)
+
+    excel = gerar_excel(mercado_resumo)
+
+    st.download_button(
+        "Baixar Excel",
+        data=excel,
+        file_name="mercados.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    mercado_resumo["%"] = mercado_resumo["%"].apply(
-        lambda x: f"{x:.2f}%"
+# =========================
+# ABA 4
+# =========================
+
+with aba4:
+
+    df_venc = df.copy()
+
+    if carteira:
+        df_venc = df_venc[df_venc["Carteira"].isin(carteira)]
+
+    if status:
+        df_venc = df_venc[df_venc["Status"].isin(status)]
+
+    df_venc["Vencimento"] = pd.to_datetime(
+        df_venc["Vencimento"],
+        errors="coerce"
     )
 
-    st.dataframe(
-        mercado_resumo,
-        use_container_width=True
+    df_venc = df_venc.dropna(subset=["Vencimento"])
+
+    df_venc["Ano-Mês"] = df_venc["Vencimento"].dt.to_period("M").astype(str)
+
+    venc = (
+        df_venc
+        .groupby("Ano-Mês")["Valor Bruto"]
+        .sum()
+        .reset_index()
+        .sort_values("Ano-Mês")
+    )
+
+    total = venc["Valor Bruto"].sum()
+
+    venc["%"] = venc["Valor Bruto"] / total * 100
+
+    st.bar_chart(
+        venc.set_index("Ano-Mês")["Valor Bruto"]
+    )
+
+    st.dataframe(venc, use_container_width=True)
+
+    excel = gerar_excel(venc)
+
+    st.download_button(
+        "Baixar Excel",
+        data=excel,
+        file_name="vencimentos.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
