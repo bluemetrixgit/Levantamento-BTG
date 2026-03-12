@@ -194,6 +194,7 @@ with aba1:
         data=excel,
         file_name="posicoes_filtradas.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        key="download_posicoes"
     )
 
 # =========================
@@ -248,6 +249,7 @@ with aba2:
         data=excel,
         file_name="resumo_contas.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        key="download_resumo"
     )
 
 # =========================
@@ -295,6 +297,7 @@ with aba3:
         data=excel,
         file_name="mercados.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        key="download_mercados"
     )
 
 # =========================
@@ -367,4 +370,5 @@ with aba4:
         data=excel,
         file_name="vencimentos.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        key="download_vencimentos"
     )
